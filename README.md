@@ -56,6 +56,8 @@ To build the image with your host user ID and keep generated files writable on t
 
 ```bash
 docker build --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) -t imvickykumar999/onion-vanity:latest .
+
+docker push imvickykumar999/onion-vanity:latest
 ```
 
 Then start it as before.

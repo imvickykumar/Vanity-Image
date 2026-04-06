@@ -194,36 +194,39 @@ def generate():
     if not prefix:
         return jsonify({'success': False, 'error': 'No prefix provided'}), 400
 
-    if current_process and current_process.poll() is not None:
+    if current_process and current_process.poll() is None:
         return jsonify({'success': False, 'error': 'Already generating. Stop first.'}), 400
 
     current_prefix = prefix
     os.makedirs(f'mkp224o/onions/{prefix}', exist_ok=True)
     cmd = ['./mkp224o', '-d', f'onions/{prefix}', prefix]
-    current_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, preexec_fn=os.setsid, cwd='mkp224o')
+    process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, preexec_fn=os.setsid, cwd='mkp224o')
+    current_process = process
 
     time.sleep(0.2)
-    if current_process.poll() is not None:
-        _, stderr = current_process.communicate()
-        return_code = current_process.returncode
-        current_process = None
+    if process.poll() is not None:
+        _, stderr = process.communicate()
+        return_code = process.returncode
+        if current_process == process:
+            current_process = None
         if return_code != 0:
-            error_text = stderr.decode(errors='replace').strip()
+            error_text = stderr.decode(errors='replace').replace('\n', '<br>')
             return jsonify({'success': False, 'error': error_text}), 400
         return jsonify({'success': True, 'message': 'mkp224o completed successfully. Check the onions folder for results.', 'estimate': estimate_time(prefix)})
 
-    def run_mkp224o():
+    def run_mkp224o(proc):
         global current_process
         try:
-            _, stderr = current_process.communicate()
+            _, stderr = proc.communicate()
             if stderr:
                 print("Error:", stderr.decode(errors='replace'))
         except Exception:
             pass
         finally:
-            current_process = None
+            if current_process == proc:
+                current_process = None
 
-    thread = threading.Thread(target=run_mkp224o)
+    thread = threading.Thread(target=run_mkp224o, args=(process,))
     thread.start()
 
     return jsonify({'success': True, 'message': 'Generation started.', 'estimate': estimate_time(prefix)})
