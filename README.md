@@ -1,9 +1,12 @@
-# Onion Vanity
+# `Onion Vanity`
 
 A Flask web app for generating vanity Tor onion addresses using `mkp224o`.
 This repository includes a Docker image published to Docker Hub.
 
-![ss](https://github.com/user-attachments/assets/e75e8f16-7935-4197-8d61-cdcfd1899c19)
+>      Deploy on Railway via Docker : https://hub.docker.com/r/imvickykumar999/onion-vanity
+>    
+><img width="1535" height="984" alt="image" src="https://github.com/user-attachments/assets/04966f8f-d055-434e-8386-5c74b651a5be" />
+><img width="1535" height="1023" alt="image" src="https://github.com/user-attachments/assets/2235d3c8-46b0-4085-9bec-26953d0d9312" />
 
 ## Docker Hub
 
@@ -61,5 +64,3 @@ docker build --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) -t imvic
 
 docker push imvickykumar999/onion-vanity:latest
 ```
-
-Then start it as before.
