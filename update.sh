@@ -11,3 +11,5 @@ docker push imvickykumar999/onion-vanity:latest
 
 docker pull imvickykumar999/onion-vanity:latest
 docker run -d --name onion-vanity -p 2000:2000 imvickykumar999/onion-vanity:latest
+
+docker logs -f onion-vanity
