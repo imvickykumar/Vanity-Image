@@ -5,7 +5,7 @@ This repository includes a Docker image published to Docker Hub.
 
 >      Deploy on Railway via Docker : https://hub.docker.com/r/imvickykumar999/onion-vanity
 >    
-><img width="1535" height="984" alt="image" src="https://github.com/user-attachments/assets/04966f8f-d055-434e-8386-5c74b651a5be" />
+><img width="1535" height="890" alt="image" src="https://github.com/user-attachments/assets/b692413f-faa0-42f4-a16a-ee435ab47c57" />
 ><img width="1535" height="1023" alt="image" src="https://github.com/user-attachments/assets/2235d3c8-46b0-4085-9bec-26953d0d9312" />
 
 ## Docker Hub
