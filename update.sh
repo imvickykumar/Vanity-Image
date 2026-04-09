@@ -1,6 +1,6 @@
 
 git add .
-git commit -m "changes"
+git commit -m "css changes"
 git push
 
 docker stop onion-vanity

@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, render_template_string, send_file
+from flask import Flask, request, jsonify, render_template_string, send_file, Response
+from functools import wraps
 import subprocess
 import os
 import threading
@@ -8,6 +9,33 @@ import zipfile
 import io
 
 app = Flask(__name__)
+
+def check_auth(username, password):
+    """Check if a username / password combination is valid."""
+    expected_username = os.environ.get('APP_USERNAME', 'admin')
+    expected_password = os.environ.get('APP_PASSWORD', 'password')
+    return username == expected_username and password == expected_password
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+    'Could not verify your access level for that URL.\n'
+    'You have to login with proper credentials', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/login')
+@requires_auth
+def login():
+    return '<script>window.location.href="/";</script>'
 
 # Global to store the current process
 current_process = None
@@ -48,88 +76,277 @@ def format_time(seconds):
 
 @app.route('/')
 def index():
-    html = '''
+    html = """
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="en" data-bs-theme="dark">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Onion Address Generator</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
+            body {
+                background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e);
+                background-size: 400% 400%;
+                animation: gradientBG 15s ease infinite;
+                color: #fff;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                overflow-x: hidden;
+                margin: 0;
+            }
+
+            @keyframes gradientBG {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+
+            .glass-card {
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px;
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+                height: 100%;
+            }
+
             .timer-display {
                 font-family: 'Courier New', Courier, monospace;
-                font-size: 1.5rem;
+                font-size: 3.5rem;
+                font-weight: 900;
+                background: -webkit-linear-gradient(#00f2fe, #4facfe);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-align: center;
+                margin: 20px 0;
+                text-shadow: 0px 5px 15px rgba(0,242,254,0.3);
+            }
+
+            .url-banner {
+                background: rgba(0,0,0,0.6);
+                backdrop-filter: blur(10px);
+                padding: 12px 0;
+                text-align: center;
+                font-family: 'Courier New', monospace;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                font-size: 1.1rem;
+                color: #a8b2d1;
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            }
+
+            a.onion-link {
+                color: #00f2fe;
+                text-decoration: none;
+                transition: all 0.3s ease;
                 font-weight: bold;
-                color: #0d6efd;
+                letter-spacing: 0.5px;
+            }
+            
+            a.onion-link:hover {
+                color: #ffffff;
+                text-shadow: 0 0 15px #00f2fe;
+            }
+
+            .main-wrapper {
+                flex: 1;
+                padding: 40px 20px;
+                display: flex;
+                align-items: stretch;
+                justify-content: center;
+            }
+            
+            .grid-container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                width: 100%;
+                max-width: 1600px;
+            }
+
+            @media (max-width: 991px) {
+                .grid-container {
+                    grid-template-columns: 1fr;
+                }
+                .timer-display { font-size: 2.5rem; }
+            }
+
+            .list-group-item {
+                background: rgba(0,0,0,0.3)!important;
+                border-color: rgba(255,255,255,0.05)!important;
+                color: #e2e8f0!important;
+                font-family: 'Courier New', monospace;
+                font-size: 1.1rem;
+                padding: 15px;
+                margin-bottom: 5px;
+                border-radius: 8px!important;
+            }
+            
+            .btn-primary {
+                background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+                border: none;
+                transition: all 0.3s ease;
+                color: #1a1a2e;
+            }
+
+            .btn-primary:hover:not(:disabled) {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 20px rgba(0,242,254,0.4);
+                color: #1a1a2e;
+            }
+            
+            .btn-info {
+                background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+                border: none;
+                color: #1a1a2e;
+                transition: all 0.3s ease;
+            }
+            
+            .btn-info:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 20px rgba(56,239,125,0.4);
+                color: #1a1a2e;
+            }
+
+            .btn-danger {
+                background: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%);
+                border: none;
+                transition: all 0.3s ease;
+            }
+
+            .btn-danger:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 20px rgba(255, 65, 108, 0.4);
+            }
+
+            .keys-scroll {
+                max-height: 500px; 
+                overflow-y: auto;
+                padding-right: 10px;
+            }
+            
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+            ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+            .header-title {
+                font-size: 3.5rem;
+                font-weight: 900;
+                background: -webkit-linear-gradient(#ffffff, #a8b2d1);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: 10px;
+                line-height: 1.2;
+            }
+            
+            .form-control {
+                background-color: rgba(0,0,0,0.2) !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                color: white !important;
+                font-family: monospace;
+                padding: 15px;
+                border-radius: 10px;
+            }
+            
+            .form-control:focus {
+                box-shadow: 0 0 0 0.25rem rgba(0, 242, 254, 0.25) !important;
+                border-color: #00f2fe !important;
             }
         </style>
     </head>
-    <body class="bg-light">
-        <div class="container mt-5">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <h3 class="card-title mb-0">Onion Address Generator</h3>
+    <body>
+        <div class="url-banner">
+            🌐 Live Demo: <a href="http://vanity3yyoibkcgj6xbsvr72oh2prmiky5bbe7ogxyq662ewhpdsaeqd.onion/" target="_blank" class="onion-link">http://vanity3yyoibkcgj6xbsvr72oh2prmiky5bbe7ogxyq662ewhpdsaeqd.onion/</a>
+        </div>
+
+        <div class="main-wrapper">
+            <div class="grid-container">
+                <!-- Left Column -->
+                <div class="d-flex flex-column gap-4">
+                    <div class="glass-card p-4 p-xl-5 d-flex flex-column">
+                        <h1 class="header-title">Onion Vanity<br>Generator</h1>
+                        <p class="fs-5 text-white-50 mb-5">Create your custom Tor V3 hidden service address powerfully & securely.</p>
+                        
+                        <div id="alertContainer"></div>
+
+                        <form id="generateForm" class="mt-auto">
+                            <div class="mb-4">
+                                <label for="prefix" class="form-label fs-5 text-white-50">Desired Prefix</label>
+                                <input type="text" id="prefix" name="prefix" class="form-control form-control-lg" placeholder="e.g., vicky" required>
+                                <div class="form-text text-white-50 mt-2">Only base32 characters allowed (a-z, 2-7).</div>
+                            </div>
+                            <div class="row g-3 mt-4">
+                                <div class="col-sm-6">
+                                    <button id="generateBtn" type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-bolder fs-5">🚀 Generate Keys</button>
+                                </div>
+                                <div class="col-sm-6">
+                                    <button id="downloadBtn" type="button" class="btn btn-info btn-lg w-100 py-3 fw-bolder fs-5">📥 Download ZIP</button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-5 pt-4 border-top border-secondary border-opacity-25">
+                            <h5 class="mb-3 text-white">How it works</h5>
+                            <p class="text-white-50 lh-lg mb-0 font-monospace small">
+                                Powered by <strong>mkp224o</strong>, using Ed25519 optimized cryptographic routines. 
+                                The countdown represents the statistical 50% probability of finding a match.
+                            </p>
                         </div>
-                        <div class="card-body">
-                            <div id="alertContainer"></div>
+                    </div>
+                </div>
 
-                            <form id="generateForm">
-                                <div class="mb-3">
-                                    <label for="prefix" class="form-label">Enter prefix</label>
-                                    <input type="text" id="prefix" name="prefix" class="form-control" placeholder="e.g., heyvix" required>
-                                </div>
-                                <div class="row gx-2">
-                                    <div class="col">
-                                        <button id="generateBtn" type="submit" class="btn btn-primary w-100">Generate</button>
-                                    </div>
-                                    <div class="col">
-                                        <button id="downloadBtn" type="button" class="btn btn-info w-100">Download ZIP</button>
-                                    </div>
-                                </div>
-                            </form>
-
-                            <div id="statusCard" class="card mt-4 d-none">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Generation Status</h5>
-                                    <div class="my-3">
-                                        <p class="mb-1 text-muted">Estimated 50% probability countdown:</p>
-                                        <div id="countdownDisplay" class="timer-display">00:00:00</div>
-                                    </div>
-                                    <p id="statusMessage" class="card-text text-start"></p>
-                                    <button id="stopButton" class="btn btn-danger w-100">Stop Generating</button>
-                                </div>
-                            </div>
-
-                            <div id="keysCard" class="card mt-4 d-none">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="card-title mb-0">Generated for <code class="text-white" id="keysPrefix"></code></h5>
-                                </div>
-                                <div class="card-body" id="keysCardBody" style="max-height: 250px; overflow-y: auto;">
-                                    <div id="generatedKeysContainer"></div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4">
-                                <h5>How it works</h5>
-                                <p class="text-muted">Addresses are brute-forced using <code>mkp224o</code>. The countdown represents the statistical 50% probability of finding a match.</p>
-                            </div>
+                <!-- Right Column -->
+                <div class="d-flex flex-column gap-4">
+                    <div id="statusCard" class="glass-card p-4 p-xl-5 d-none d-flex flex-column">
+                        <h3 class="card-title fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-3">Live Mining Status</h3>
+                        <div class="text-center my-auto py-4">
+                            <p class="fs-5 text-info mb-2 text-uppercase tracking-wide font-monospace">Estimated Time Remaining</p>
+                            <div id="countdownDisplay" class="timer-display">00:00:00</div>
+                            <p id="statusMessage" class="fs-4 mt-4 font-monospace text-white-50"></p>
                         </div>
+                        <button id="stopButton" class="btn btn-danger btn-lg w-100 py-3 fw-bolder fs-5 mt-auto">🛑 Stop Process</button>
+                    </div>
+
+                    <div id="keysCard" class="glass-card p-4 p-xl-5 d-none flex-column" style="display: flex;">
+                        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
+                            <h3 class="card-title fw-bold mb-0">Generated Keys</h3>
+                            <span class="badge bg-success bg-opacity-25 text-success fs-5 px-4 py-2 rounded-pill border border-success border-opacity-50" id="keysPrefixBadge"></span>
+                        </div>
+                        <div class="keys-scroll hide-scrollbar mt-3" id="keysCardBody" style="flex: 1;">
+                            <div id="generatedKeysContainer"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="emptyState" class="glass-card p-4 p-xl-5 d-flex flex-column align-items-center justify-content-center text-center opacity-50">
+                        <svg xmlns="http://www.w3.org/-2000/svg" width="80" height="80" fill="currentColor" class="bi bi-cpu mb-4 text-white-50" viewBox="0 0 16 16">
+                            <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0m-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z"/>
+                        </svg>
+                        <h4 class="text-white fw-bold">System Idle</h4>
+                        <p class="text-white-50 mb-0 fs-5">Enter a prefix to begin mining operations.</p>
                     </div>
                 </div>
             </div>
         </div>
+
         <script>
             const form = document.getElementById('generateForm');
             const alertContainer = document.getElementById('alertContainer');
             const statusCard = document.getElementById('statusCard');
+            const keysCard = document.getElementById('keysCard');
+            const emptyState = document.getElementById('emptyState');
             const statusMessage = document.getElementById('statusMessage');
             const countdownDisplay = document.getElementById('countdownDisplay');
             const stopButton = document.getElementById('stopButton');
             const generateButton = document.getElementById('generateBtn');
             const downloadButton = document.getElementById('downloadBtn');
+            const keysPrefixBadge = document.getElementById('keysPrefixBadge');
 
             let pollInterval = null;
             let countdownInterval = null;
@@ -151,12 +368,12 @@ def index():
                 const updateUI = () => {
                     countdownDisplay.innerText = formatDuration(remaining);
                     if (remaining <= 0) {
-                        countdownDisplay.classList.remove('text-primary');
-                        countdownDisplay.classList.add('text-warning');
+                        countdownDisplay.style.background = "-webkit-linear-gradient(#f6d365, #fda085)";
+                        countdownDisplay.style.webkitBackgroundClip = "text";
                         countdownDisplay.innerText = "Probability > 50%...";
                     } else {
-                        countdownDisplay.classList.add('text-primary');
-                        countdownDisplay.classList.remove('text-warning');
+                        countdownDisplay.style.background = "-webkit-linear-gradient(#00f2fe, #4facfe)";
+                        countdownDisplay.style.webkitBackgroundClip = "text";
                     }
                 };
 
@@ -169,9 +386,9 @@ def index():
 
             function showAlert(message, type = 'info') {
                 alertContainer.innerHTML = `
-                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-${type} bg-${type} bg-opacity-25 text-white border-${type} alert-dismissible fade show shadow" role="alert">
                         ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 `;
             }
@@ -182,20 +399,21 @@ def index():
                     const data = await response.json();
                     
                     if (data.prefix) {
-                        document.getElementById('keysCard').classList.remove('d-none');
+                        keysCard.classList.remove('d-none');
+                        emptyState.classList.add('d-none');
                         if (data.prefix !== currentPrefix) {
                             currentPrefix = data.prefix;
                             currentKnownKeysLength = -1;
-                            document.getElementById('keysPrefix').innerText = data.prefix;
+                            keysPrefixBadge.innerText = data.prefix;
                         }
                         
                         if (data.keys.length !== currentKnownKeysLength) {
                             currentKnownKeysLength = data.keys.length;
                             const container = document.getElementById('generatedKeysContainer');
                             if (data.keys.length === 0) {
-                                container.innerHTML = '<p class="text-muted mb-0 text-center">Searching...</p>';
+                                container.innerHTML = '<div class="d-flex h-100 align-items-center justify-content-center pt-4 pb-4"><div class="spinner-grow text-info me-3" role="status"></div><span class="text-white-50 fs-5 font-monospace">Searching blocks...</span></div>';
                             } else {
-                                container.innerHTML = '<ul class="list-group">' + data.keys.map(k => `<li class="list-group-item d-flex justify-content-between"><code>${k}</code> <span class="badge bg-success">Found</span></li>`).join('') + '</ul>';
+                                container.innerHTML = '<div class="list-group list-group-flush gap-2">' + data.keys.map(k => `<div class="list-group-item d-flex justify-content-between align-items-center shadow-sm"><code>${k}</code> <span class="badge bg-success bg-opacity-75 rounded-pill">Found</span></div>`).join('') + '</div>';
                             }
                             const keysCardBody = document.getElementById('keysCardBody');
                             keysCardBody.scrollTop = keysCardBody.scrollHeight;
@@ -203,12 +421,12 @@ def index():
                     }
 
                     if (data.generating) {
-                        statusMessage.innerHTML = `Prefix: <strong>${data.prefix}</strong>`;
+                        statusMessage.innerHTML = `Target Prefix: <span class="text-info fw-bold">${data.prefix}</span>`;
                         statusCard.classList.remove('d-none');
+                        emptyState.classList.add('d-none');
                         document.getElementById('prefix').disabled = true;
                         generateButton.disabled = true;
                         
-                        // Handle timer
                         if (!countdownInterval && data.estimate_seconds) {
                             startCountdown(data.estimate_seconds, data.elapsed_seconds);
                         }
@@ -218,6 +436,10 @@ def index():
                         generateButton.disabled = false;
                         clearInterval(countdownInterval);
                         countdownInterval = null;
+                        
+                        if (keysCard.classList.contains('d-none')) {
+                            emptyState.classList.remove('d-none');
+                        }
                     }
 
                     return data.generating;
@@ -242,12 +464,17 @@ def index():
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const formData = new FormData(form);
-                showAlert('Initializing mkp224o...', 'info');
+                showAlert('Initializing mining operation...', 'info');
 
                 const response = await fetch('/generate', {
                     method: 'POST',
                     body: formData
                 });
+
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
 
                 const data = await response.json();
                 if (!data.success) {
@@ -255,7 +482,7 @@ def index():
                     return;
                 }
 
-                showAlert('<strong>Generation process started.</strong>', 'success');
+                showAlert('<strong>Mining process initiated.</strong> Engine running.', 'success');
                 currentKnownKeysLength = -1; 
                 await fetchStatus();
                 startPolling();
@@ -263,9 +490,13 @@ def index():
 
             stopButton.addEventListener('click', async () => {
                 const response = await fetch('/stop', { method: 'POST' });
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
                 const data = await response.json();
                 if (data.success) {
-                    showAlert(`<strong>Stopped:</strong> ${data.message}`, 'warning');
+                    showAlert(`<strong>Halted:</strong> ${data.message}`, 'warning');
                     await fetchStatus();
                 }
             });
@@ -287,10 +518,11 @@ def index():
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </body>
     </html>
-    '''
+    """
     return render_template_string(html)
 
 @app.route('/generate', methods=['POST'])
+@requires_auth
 def generate():
     global current_process, current_prefix, start_time
     prefix = request.form.get('prefix')
@@ -356,6 +588,7 @@ def status():
     })
 
 @app.route('/stop', methods=['POST'])
+@requires_auth
 def stop():
     global current_process
     if current_process and current_process.poll() is None:
@@ -368,6 +601,7 @@ def stop():
     return jsonify({'success': False, 'message': 'No active generation.'}), 400
 
 @app.route('/download')
+@requires_auth
 def download():
     prefix = request.args.get('prefix')
     if not prefix: return jsonify({'error': 'No prefix'}), 400
