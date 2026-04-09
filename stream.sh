@@ -13,4 +13,4 @@ sleep 5
 x11vnc -display :99 -bg -nopw -listen 0.0.0.0 -xkb
 
 # Stream X11 screen to YouTube via FFmpeg
-ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :99.0 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -c:v libx264 -preset veryfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
+ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :99.0 -f lavfi -i anoisesrc=a=0.005:c=white:r=44100 -ac 2 -c:v libx264 -preset veryfast -b:v 6800k -minrate 6800k -maxrate 6800k -bufsize 13600k -nal-hrd cbr -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
