@@ -128,7 +128,7 @@ def index():
             .url-banner {
                 background: rgba(0,0,0,0.6);
                 backdrop-filter: blur(10px);
-                padding: 12px 0;
+                padding: 12px 15px; /* Added horizontal padding */
                 text-align: center;
                 font-family: 'Courier New', monospace;
                 border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -138,6 +138,13 @@ def index():
                 font-size: 1.1rem;
                 color: #a8b2d1;
                 box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+                
+                /* Flexbox helps keep the "Live Demo:" text and link aligned */
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 5px;
+                white-space: nowrap;
             }
 
             a.onion-link {
@@ -146,8 +153,26 @@ def index():
                 transition: all 0.3s ease;
                 font-weight: bold;
                 letter-spacing: 0.5px;
+                
+                /* Truncation Logic */
+                display: inline-block;
+                vertical-align: bottom;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%; /* Default for desktop */
             }
-            
+
+            /* Mobile Responsive Rule */
+            @media (max-width: 576px) {
+                a.onion-link {
+                    /* Adjust width to show roughly the first 8-10 characters */
+                    max-width: 130px; 
+                }
+                .url-banner {
+                    font-size: 0.9rem;
+                }
+            }
+
             a.onion-link:hover {
                 color: #ffffff;
                 text-shadow: 0 0 15px #00f2fe;
@@ -268,7 +293,10 @@ def index():
     </head>
     <body>
         <div class="url-banner">
-            🌐 Live Demo: <a href="http://vanity3yyoibkcgj6xbsvr72oh2prmiky5bbe7ogxyq662ewhpdsaeqd.onion/" target="_blank" class="onion-link">http://vanity3yyoibkcgj6xbsvr72oh2prmiky5bbe7ogxyq662ewhpdsaeqd.onion/</a>
+            <span>🌐 Live Demo:</span> 
+            <a href="http://vanity3yyoibkcgj6xbsvr72oh2prmiky5bbe7ogxyq662ewhpdsaeqd.onion/" target="_blank" class="onion-link">
+                http://vanity3yyoibkcgj6xbsvr72oh2prmiky5bbe7ogxyq662ewhpdsaeqd.onion/
+            </a>
         </div>
 
         <div class="main-wrapper">
