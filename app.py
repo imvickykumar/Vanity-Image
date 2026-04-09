@@ -115,7 +115,7 @@ def index():
 
             .timer-display {
                 font-family: 'Courier New', Courier, monospace;
-                font-size: 3.5rem;
+                font-size: 2.2rem;
                 font-weight: 900;
                 background: -webkit-linear-gradient(#00f2fe, #4facfe);
                 -webkit-background-clip: text;
@@ -163,17 +163,23 @@ def index():
             
             .grid-container {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 350px 1fr;
                 gap: 40px;
                 width: 100%;
-                max-width: 1600px;
+                max-width: 1800px;
+            }
+
+            @media (max-width: 1400px) {
+                .grid-container {
+                    grid-template-columns: 1fr 1.5fr;
+                }
             }
 
             @media (max-width: 991px) {
                 .grid-container {
                     grid-template-columns: 1fr;
                 }
-                .timer-display { font-size: 2.5rem; }
+                .timer-display { font-size: 2rem; }
             }
 
             .list-group-item {
@@ -270,7 +276,7 @@ def index():
                 <!-- Left Column -->
                 <div class="d-flex flex-column gap-4">
                     <div class="glass-card p-4 p-xl-5 d-flex flex-column">
-                        <h1 class="header-title">Onion Vanity<br>Generator</h1>
+                        <h2 class="header-title">Onion Vanity Generator</h2>
                         <p class="fs-5 text-white-50 mb-5">Create your custom Tor V3 hidden service address powerfully & securely.</p>
                         
                         <div id="alertContainer"></div>
@@ -278,7 +284,7 @@ def index():
                         <form id="generateForm" class="mt-auto">
                             <div class="mb-4">
                                 <label for="prefix" class="form-label fs-5 text-white-50">Desired Prefix</label>
-                                <input type="text" id="prefix" name="prefix" class="form-control form-control-lg" placeholder="e.g., vicky" required>
+                                <input type="text" id="prefix" name="prefix" class="form-control form-control-lg" placeholder="e.g., vanity" required>
                                 <div class="form-text text-white-50 mt-2">Only base32 characters allowed (a-z, 2-7).</div>
                             </div>
                             <div class="row g-3 mt-4">
@@ -290,20 +296,12 @@ def index():
                                 </div>
                             </div>
                         </form>
-                        
-                        <div class="mt-5 pt-4 border-top border-secondary border-opacity-25">
-                            <h5 class="mb-3 text-white">How it works</h5>
-                            <p class="text-white-50 lh-lg mb-0 font-monospace small">
-                                Powered by <strong>mkp224o</strong>, using Ed25519 optimized cryptographic routines. 
-                                The countdown represents the statistical 50% probability of finding a match.
-                            </p>
-                        </div>
                     </div>
                 </div>
 
                 <!-- Right Column -->
-                <div class="d-flex flex-column gap-4">
-                    <div id="statusCard" class="glass-card p-4 p-xl-5 d-none d-flex flex-column">
+                <div class="d-flex flex-column gap-4 w-100 h-100" style="min-height: 0;">
+                    <div id="statusCard" class="glass-card p-4 p-xl-5 d-none d-flex flex-column" style="flex: 1;">
                         <h3 class="card-title fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-3">Live Mining Status</h3>
                         <div class="text-center my-auto py-4">
                             <p class="fs-5 text-info mb-2 text-uppercase tracking-wide font-monospace">Estimated Time Remaining</p>
@@ -313,18 +311,18 @@ def index():
                         <button id="stopButton" class="btn btn-danger btn-lg w-100 py-3 fw-bolder fs-5 mt-auto">🛑 Stop Process</button>
                     </div>
 
-                    <div id="keysCard" class="glass-card p-4 p-xl-5 d-none flex-column" style="display: flex;">
+                    <div id="keysCard" class="glass-card p-4 p-xl-5 d-none flex-column" style="display: flex; flex: 1; min-height: 0; overflow: hidden;">
                         <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
                             <h3 class="card-title fw-bold mb-0">Generated Keys</h3>
                             <span class="badge bg-success bg-opacity-25 text-success fs-5 px-4 py-2 rounded-pill border border-success border-opacity-50" id="keysPrefixBadge"></span>
                         </div>
-                        <div class="keys-scroll hide-scrollbar mt-3" id="keysCardBody" style="flex: 1;">
+                        <div class="keys-scroll mt-3 w-100" id="keysCardBody" style="flex: 1; min-height: 0; overflow-y: auto;">
                             <div id="generatedKeysContainer"></div>
                         </div>
                     </div>
                     
                     <!-- Empty State -->
-                    <div id="emptyState" class="glass-card p-4 p-xl-5 d-flex flex-column align-items-center justify-content-center text-center opacity-50">
+                    <div id="emptyState" class="glass-card p-4 p-xl-5 d-flex flex-column align-items-center justify-content-center text-center opacity-50 h-100">
                         <svg xmlns="http://www.w3.org/-2000/svg" width="80" height="80" fill="currentColor" class="bi bi-cpu mb-4 text-white-50" viewBox="0 0 16 16">
                             <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0m-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z"/>
                         </svg>
@@ -370,7 +368,7 @@ def index():
                     if (remaining <= 0) {
                         countdownDisplay.style.background = "-webkit-linear-gradient(#f6d365, #fda085)";
                         countdownDisplay.style.webkitBackgroundClip = "text";
-                        countdownDisplay.innerText = "Probability > 50%...";
+                        countdownDisplay.innerText = "Prob > 50%";
                     } else {
                         countdownDisplay.style.background = "-webkit-linear-gradient(#00f2fe, #4facfe)";
                         countdownDisplay.style.webkitBackgroundClip = "text";
@@ -413,7 +411,7 @@ def index():
                             if (data.keys.length === 0) {
                                 container.innerHTML = '<div class="d-flex h-100 align-items-center justify-content-center pt-4 pb-4"><div class="spinner-grow text-info me-3" role="status"></div><span class="text-white-50 fs-5 font-monospace">Searching blocks...</span></div>';
                             } else {
-                                container.innerHTML = '<div class="list-group list-group-flush gap-2">' + data.keys.map(k => `<div class="list-group-item d-flex justify-content-between align-items-center shadow-sm"><code>${k}</code> <span class="badge bg-success bg-opacity-75 rounded-pill">Found</span></div>`).join('') + '</div>';
+                                container.innerHTML = '<div class="list-group list-group-flush gap-2"><div class="list-group-item d-flex justify-content-between align-items-center shadow-sm"><code>' + data.keys[0] + '</code> <span class="badge bg-success bg-opacity-75 rounded-pill">Latest</span></div></div>';
                             }
                             const keysCardBody = document.getElementById('keysCardBody');
                             keysCardBody.scrollTop = keysCardBody.scrollHeight;
@@ -423,6 +421,7 @@ def index():
                     if (data.generating) {
                         statusMessage.innerHTML = `Target Prefix: <span class="text-info fw-bold">${data.prefix}</span>`;
                         statusCard.classList.remove('d-none');
+                        keysCard.style.gridColumn = "";
                         emptyState.classList.add('d-none');
                         document.getElementById('prefix').disabled = true;
                         generateButton.disabled = true;
@@ -432,6 +431,7 @@ def index():
                         }
                     } else {
                         statusCard.classList.add('d-none');
+                        keysCard.style.gridColumn = "1 / -1";
                         document.getElementById('prefix').disabled = false;
                         generateButton.disabled = false;
                         clearInterval(countdownInterval);
@@ -570,9 +570,13 @@ def status():
         onions_dir = f'mkp224o/onions/{current_prefix}'
         if os.path.exists(onions_dir):
             try:
+                items_with_mtime = []
                 for item in os.listdir(onions_dir):
-                    if item.endswith('.onion') and os.path.isdir(os.path.join(onions_dir, item)):
-                        keys.append(item)
+                    item_path = os.path.join(onions_dir, item)
+                    if item.endswith('.onion') and os.path.isdir(item_path):
+                        items_with_mtime.append((item, os.path.getmtime(item_path)))
+                items_with_mtime.sort(key=lambda x: x[1], reverse=True)
+                keys = [k[0] for k in items_with_mtime]
             except Exception: pass
 
     is_generating = current_process is not None and current_process.poll() is None
@@ -620,4 +624,4 @@ def download():
     return send_file(zip_buffer, as_attachment=True, download_name=f'{prefix}_onions.zip', mimetype='application/zip')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2000, debug=True)
+    app.run(host='0.0.0.0', port=2000, debug=False)
