@@ -163,7 +163,7 @@ def index():
             
             .grid-container {
                 display: grid;
-                grid-template-columns: 350px 1fr;
+                grid-template-columns: 1fr 1fr;
                 gap: 40px;
                 width: 100%;
                 max-width: 1800px;
